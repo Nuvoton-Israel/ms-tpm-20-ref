@@ -49,12 +49,16 @@
 // macros will make sure that it is set correctly. A simulated TPM would include a
 // Virtual TPM. The interfaces for a Virtual TPM should be modified from the standard
 // ones in the Simulator project.
+#ifndef SIMULATION
 #define SIMULATION                  YES
+#endif
 
 
 // The CRYPTO_LIB_REPORTING switch allows the TPM to report its
 // crypto library implementation, e.g., at simulation startup.
+#ifndef CRYPTO_LIB_REPORTING
 #define CRYPTO_LIB_REPORTING        YES
+#endif
 
 // If doing debug, can set the DRBG to print out the intermediate test values.
 // Before enabling this, make sure that the dbgDumpMemBlock() function
@@ -92,7 +96,9 @@
 // g_forceFailureMode flag in the TPM library while leaving the rest of the TPM
 // behavior alone.  Useful for testing when the full set of options controlled by
 // SIMULATION may not be desired.
+#ifndef ALLOW_FORCE_FAILURE_MODE
 #define ALLOW_FORCE_FAILURE_MODE    YES
+#endif
 
 ////////////////////////////////////////////////////////////////
 // Internal checks
@@ -100,7 +106,9 @@
 
 // Define this to run the function that checks the compatibility between the
 // chosen big number math library and the TPM code. Not all ports use this.
+#ifndef LIBRARY_COMPATIBILITY_CHECK
 #define LIBRARY_COMPATIBILITY_CHECK YES
+#endif
 
 // In some cases, the relationship between two values may be dependent on things that
 // change based on various selections like the chosen cryptographic libraries. It is

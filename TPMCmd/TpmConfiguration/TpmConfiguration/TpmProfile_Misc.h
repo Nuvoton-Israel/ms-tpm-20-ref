@@ -17,19 +17,31 @@
 #define HCRTM_PCR                  0
 #define NUM_LOCALITIES             5
 #define MAX_HANDLE_NUM             3
+#ifndef MAX_ACTIVE_SESSIONS
 #define MAX_ACTIVE_SESSIONS        64
+#endif
 #define MAX_LOADED_SESSIONS        3
 #define MAX_SESSION_NUM            3
 #define MAX_LOADED_OBJECTS         3
+#ifndef MIN_EVICT_OBJECTS
 #define MIN_EVICT_OBJECTS          2
+#endif
 #define NUM_POLICY_PCR_GROUP       1
 #define NUM_AUTHVALUE_PCR_GROUP    1
+#ifndef MAX_CONTEXT_SIZE
 #define MAX_CONTEXT_SIZE           2168
+#endif
 #define MAX_DIGEST_BUFFER          1024
+#ifndef MAX_NV_INDEX_SIZE
 #define MAX_NV_INDEX_SIZE          2048
+#endif
+#ifndef MAX_NV_BUFFER_SIZE
 #define MAX_NV_BUFFER_SIZE         1024
+#endif
 #define MAX_CAP_BUFFER             1024
+#ifndef NV_MEMORY_SIZE
 #define NV_MEMORY_SIZE             16384
+#endif
 #define MIN_COUNTER_INDICES        8
 #define NUM_STATIC_PCR             16
 #define MAX_ALG_LIST_SIZE          64
@@ -41,7 +53,9 @@
 #define ORDERLY_BITS               8
 #define MAX_SYM_DATA               128
 #define MAX_RNG_ENTROPY_SIZE       64
+#ifndef RAM_INDEX_SPACE
 #define RAM_INDEX_SPACE            512
+#endif
 #define ENABLE_PCR_NO_INCREMENT    YES
 
 #define SIZE_OF_X509_SERIAL_NUMBER 20

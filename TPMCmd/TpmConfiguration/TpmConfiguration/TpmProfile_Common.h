@@ -45,7 +45,9 @@
 
 #define     SM4_128                     (NO  * ALG_SM4)
 
+#ifndef ALG_CAMELLIA
 #define ALG_CAMELLIA                ALG_YES
+#endif
 
 #define     CAMELLIA_128                (YES * ALG_CAMELLIA)
 #define     CAMELLIA_192                (NO  * ALG_CAMELLIA)
@@ -66,10 +68,16 @@
 // Defines for RSA Asymmetric Algorithms
 //***********************************************
 #define ALG_RSA                     ALG_YES
+#ifndef RSA_1024
 #define     RSA_1024                        (YES * ALG_RSA)
+#endif
 #define     RSA_2048                        (YES * ALG_RSA)
+#ifndef RSA_3072
 #define     RSA_3072                        (YES * ALG_RSA)
+#endif
+#ifndef RSA_4096
 #define     RSA_4096                        (YES * ALG_RSA)
+#endif
 #define     RSA_16384                       (NO  * ALG_RSA)
 
 #define     ALG_RSASSA                      (YES * ALG_RSA)
@@ -88,22 +96,40 @@
 #define ALG_ECC                     ALG_YES
 #define     ALG_ECDH                        (YES * ALG_ECC)
 #define     ALG_ECDSA                       (YES * ALG_ECC)
+#ifndef ALG_ECDAA
 #define     ALG_ECDAA                       (YES * ALG_ECC)
+#endif
+#ifndef ALG_SM2
 #define     ALG_SM2                         (YES * ALG_ECC)
+#endif
+#ifndef ALG_ECSCHNORR
 #define     ALG_ECSCHNORR                   (YES * ALG_ECC)
+#endif
 #define     ALG_ECMQV                       (YES * ALG_ECC)
 #define     ALG_KDF1_SP800_56A              (YES * ALG_ECC)
 #define     ALG_EDDSA                       (NO  * ALG_ECC)
 #define     ALG_EDDSA_PH                    (NO  * ALG_ECC)
 
+#ifndef ECC_NIST_P192
 #define     ECC_NIST_P192                   (YES * ALG_ECC)
+#endif
+#ifndef ECC_NIST_P224
 #define     ECC_NIST_P224                   (YES * ALG_ECC)
+#endif
 #define     ECC_NIST_P256                   (YES * ALG_ECC)
 #define     ECC_NIST_P384                   (YES * ALG_ECC)
+#ifndef ECC_NIST_P521
 #define     ECC_NIST_P521                   (YES * ALG_ECC)
+#endif
+#ifndef ECC_BN_P256
 #define     ECC_BN_P256                     (YES * ALG_ECC)
+#endif
+#ifndef ECC_BN_P638
 #define     ECC_BN_P638                     (YES * ALG_ECC)
+#endif
+#ifndef ECC_SM2_P256
 #define     ECC_SM2_P256                    (YES * ALG_ECC)
+#endif
 
 #define     ECC_BP_P256_R1                  (NO * ALG_ECC)
 #define     ECC_BP_P384_R1                  (NO * ALG_ECC)
@@ -210,8 +236,12 @@
 //***********************************************
 // Defines controlling Firmware- and SVN-limited objects
 //***********************************************
+#ifndef FW_LIMITED_SUPPORT
 #define FW_LIMITED_SUPPORT                    YES
+#endif
+#ifndef SVN_LIMITED_SUPPORT
 #define SVN_LIMITED_SUPPORT                   YES
+#endif
 
 //***********************************************
 // Defines controlling External NV

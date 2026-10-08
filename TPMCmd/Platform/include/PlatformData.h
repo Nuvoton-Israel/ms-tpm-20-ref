@@ -70,7 +70,12 @@ EXTERN unsigned char s_locality;
 #  define FILE_BACKED_NV YES
 #endif  // SIMULATION
 
+#ifndef PLATFORM_PROVIDES_NV_MEMORY
+#define PLATFORM_PROVIDES_NV_MEMORY NO
+#endif
+#if PLATFORM_PROVIDES_NV_MEMORY == NO
 EXTERN unsigned char s_NV[NV_MEMORY_SIZE];
+#endif
 EXTERN int           s_NvIsAvailable;
 EXTERN int           s_NV_unrecoverable;
 EXTERN int           s_NV_recoverable;
