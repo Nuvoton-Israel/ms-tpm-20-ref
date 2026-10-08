@@ -154,8 +154,9 @@ void NvRead(void*  outBuffer,  // OUT: buffer to receive data
 )
 {
     // Input type should be valid
-    pAssert(nvOffset + size < NV_MEMORY_SIZE);
-    _plat__NvMemoryRead(nvOffset, size, outBuffer);
+    pAssert(nvOffset <= NV_MEMORY_SIZE && size <= (NV_MEMORY_SIZE - nvOffset));
+    if(!_plat__NvMemoryRead(nvOffset, size, outBuffer))
+        FAIL(FATAL_ERROR_PLATFORM);
     return;
 }
 
@@ -168,7 +169,7 @@ BOOL NvWrite(UINT32 nvOffset,  // IN: location in NV to receive data
 )
 {
     // Input type should be valid
-    if(nvOffset + size <= NV_MEMORY_SIZE)
+    if(nvOffset <= NV_MEMORY_SIZE && size <= (NV_MEMORY_SIZE - nvOffset))
     {
         // Set the flag that a NV write happened
         SET_NV_UPDATE(UT_NV);

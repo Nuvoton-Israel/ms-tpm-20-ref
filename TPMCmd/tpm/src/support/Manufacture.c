@@ -107,12 +107,9 @@ LIB_EXPORT int TPM_Manufacture(
 
     NvWrite(NV_ORDERLY_DATA, sizeof(ORDERLY_DATA), &go);
 
-    // Commit NV writes.  Manufacture process is an artificial process existing
-    // only in simulator environment and it is not defined in the specification
-    // that what should be the expected behavior if the NV write fails at this
-    // point.  Therefore, it is assumed the NV write here is always success and
-    // no return code of this function is checked.
-    NvCommit();
+    // Manufacturing is complete only after the initial NV image is durable.
+    if(!NvCommit())
+        return MANUF_NV_NOT_READY;
 
     g_manufactured = TRUE;
 
