@@ -348,6 +348,7 @@ LIB_EXPORT BOOL BnEccModMult(bigPoint   R,  // OUT: computed point
     BOOL OK;
     MP_INITIALIZED(bnD, d);
     MP_INITIALIZED(bnPrime, BnCurveGetPrime(AccessCurveConstants(E)));
+    MP_INITIALIZED(bnA, BnCurveGet_a(AccessCurveConstants(E)));
     POINT_CREATE(pS, NULL);
     POINT_CREATE(pR, NULL);
 
@@ -356,7 +357,7 @@ LIB_EXPORT BOOL BnEccModMult(bigPoint   R,  // OUT: computed point
 
     PointToWolf(pS, S);
 
-    OK = (wc_ecc_mulmod(bnD, pS, pR, NULL, bnPrime, 1) == MP_OKAY);
+    OK = (wc_ecc_mulmod(bnD, pS, pR, bnA, bnPrime, 1) == MP_OKAY);
     if(OK)
     {
         PointFromWolf(R, pR);

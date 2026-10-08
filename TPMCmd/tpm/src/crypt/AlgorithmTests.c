@@ -586,15 +586,19 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
             LoadEccParameter(&testSig.signature.ecdsa.signatureR, &c_TestEcDsa_r);
             LoadEccParameter(&testSig.signature.ecdsa.signatureS, &c_TestEcDsa_s);
             break;
+#if ALG_ECSCHNORR
         case TPM_ALG_ECSCHNORR:
             LoadEccParameter(&testSig.signature.ecschnorr.signatureR,
                              &c_TestEcSchnorr_r);
             LoadEccParameter(&testSig.signature.ecschnorr.signatureS,
                              &c_TestEcSchnorr_s);
             break;
+#endif
+#if ALG_SM2
         case TPM_ALG_SM2:
             // don't have a test for SM2
             return TPM_RC_SUCCESS;
+#endif
         default:
             SELF_TEST_FAILURE;
             break;
@@ -620,17 +624,21 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
     CHECK_CANCELED;
 
     // Now sign and verify some data
-    if(TPM_RC_SUCCESS
-       != CryptEccSign(
-           &testSig, &testObject, (TPM2B_DIGEST*)&c_ecTestValue, &eccScheme, NULL))
-        SELF_TEST_FAILURE;
+    {
+        TPM_RC signResult = CryptEccSign(
+           &testSig, &testObject, (TPM2B_DIGEST*)&c_ecTestValue, &eccScheme, NULL);
+        if(signResult != TPM_RC_SUCCESS)
+            SELF_TEST_FAILURE;
+    }
 
     CHECK_CANCELED;
 
-    if(TPM_RC_SUCCESS
-       != CryptEccValidateSignature(
-           &testSig, &testObject, (TPM2B_DIGEST*)&c_ecTestValue))
-        SELF_TEST_FAILURE;
+    {
+        TPM_RC verifyResult = CryptEccValidateSignature(
+           &testSig, &testObject, (TPM2B_DIGEST*)&c_ecTestValue);
+        if(verifyResult != TPM_RC_SUCCESS)
+            SELF_TEST_FAILURE;
+    }
 
     CHECK_CANCELED;
 

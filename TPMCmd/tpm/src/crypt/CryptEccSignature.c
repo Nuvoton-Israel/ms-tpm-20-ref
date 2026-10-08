@@ -42,10 +42,10 @@ LIB_EXPORT TPM_RC CryptEccSign(TPMT_SIGNATURE* signature,  // OUT: signature
     NOT_REFERENCED(scheme);
     if(E == NULL)
         ERROR_EXIT(TPM_RC_VALUE);
-    signature->signature.ecdaa.signatureR.t.size =
-        sizeof(signature->signature.ecdaa.signatureR.t.buffer);
-    signature->signature.ecdaa.signatureS.t.size =
-        sizeof(signature->signature.ecdaa.signatureS.t.buffer);
+    signature->signature.ecdsa.signatureR.t.size =
+        sizeof(signature->signature.ecdsa.signatureR.t.buffer);
+    signature->signature.ecdsa.signatureS.t.size =
+        sizeof(signature->signature.ecdsa.signatureS.t.buffer);
     TPM_DO_SELF_TEST(signature->sigAlg);
     switch(signature->sigAlg)
     {
@@ -86,10 +86,10 @@ LIB_EXPORT TPM_RC CryptEccSign(TPMT_SIGNATURE* signature,  // OUT: signature
             ExtMath_SizeInBits(ExtEcc_CurveGetOrder(ExtEcc_CurveGetCurveId(E))));
         if(bnR != NULL)
             TpmMath_IntTo2B(
-                bnR, &signature->signature.ecdaa.signatureR.b, orderBytes);
+                bnR, &signature->signature.ecdsa.signatureR.b, orderBytes);
         if(bnS != NULL)
             TpmMath_IntTo2B(
-                bnS, &signature->signature.ecdaa.signatureS.b, orderBytes);
+                bnS, &signature->signature.ecdsa.signatureS.b, orderBytes);
     }
 Exit:
     CRYPT_CURVE_FREE(E);
