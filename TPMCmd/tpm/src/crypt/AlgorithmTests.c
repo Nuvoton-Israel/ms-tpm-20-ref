@@ -570,6 +570,14 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
     static TPMT_SIGNATURE  testSig;
     static TPMT_ECC_SCHEME eccScheme;
 
+#  define CHECK_ECC_CANCELED                       \
+    if(_plat__IsCanceled() && toTest != &g_toTest) \
+    {                                              \
+        SET_BOTH(scheme);                          \
+        SET_BOTH(TPM_ALG_ECDH);                    \
+        return TPM_RC_CANCELED;                    \
+    }
+
     testSig.sigAlg                   = scheme;
     testSig.signature.ecdsa.hash     = DEFAULT_TEST_HASH;
 
@@ -621,7 +629,7 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
     {
         SELF_TEST_FAILURE;
     }
-    CHECK_CANCELED;
+    CHECK_ECC_CANCELED;
 
     // Now sign and verify some data
     {
@@ -631,7 +639,7 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
             SELF_TEST_FAILURE;
     }
 
-    CHECK_CANCELED;
+    CHECK_ECC_CANCELED;
 
     {
         TPM_RC verifyResult = CryptEccValidateSignature(
@@ -640,7 +648,9 @@ static TPM_RC TestEccSignAndVerify(TPM_ALG_ID scheme, ALGORITHM_VECTOR* toTest)
             SELF_TEST_FAILURE;
     }
 
-    CHECK_CANCELED;
+    CHECK_ECC_CANCELED;
+
+#  undef CHECK_ECC_CANCELED
 
     return TPM_RC_SUCCESS;
 }

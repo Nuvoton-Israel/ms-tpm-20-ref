@@ -1553,15 +1553,21 @@ CryptValidateSignature(TPMI_DH_OBJECT  keyHandle,  // IN: The handle of sign key
 
 //*** CryptGetTestResult
 // This function returns the results of a self-test function.
-// Note: the behavior in this function is NOT the correct behavior for a real
-// TPM implementation.  An artificial behavior is placed here due to the
-// limitation of a software simulation environment.  For the correct behavior,
-// consult the part 3 specification for TPM2_GetTestResult().
+// CoP runs cryptographic self-tests asynchronously. Report TPM_RC_TESTING while
+// any algorithm is still pending; return success once the background drain or
+// test-on-first-use has cleared the pending vector.
 TPM_RC
 CryptGetTestResult(TPM2B_MAX_BUFFER* outData  // OUT: test result data
 )
 {
+    int drainResult;
+
     outData->t.size = 0;
+    drainResult = CryptSelfTestDrainOne();
+    if(drainResult == -2 || drainResult == 1)
+        return TPM_RC_TESTING;
+    if(drainResult < 0)
+        return TPM_RC_FAILURE;
     return TPM_RC_SUCCESS;
 }
 

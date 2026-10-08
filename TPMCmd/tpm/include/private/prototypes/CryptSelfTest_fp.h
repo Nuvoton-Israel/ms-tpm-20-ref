@@ -11,18 +11,21 @@
 // If 'fullTest' is NO, then only the untested algorithms will be run. If
 // 'fullTest' is YES, then 'g_untestedDecryptionAlgorithms' is reinitialized and then
 // all tests are run.
-// This implementation of the reference design does not support processing outside
-// the framework of a TPM command. As a consequence, this command does not
-// complete until all tests are done. Since this can take a long time, the TPM
-// will check after each test to see if the command is canceled. If so, then the
-// TPM will returned TPM_RC_CANCELLED. To continue with the self-tests, call
-// TPM2_SelfTest(fullTest == No) and the TPM will complete the testing.
+// The CoP implementation returns TPM_RC_TESTING while an asynchronous full-test
+// cycle is active. Background processing tests one algorithm at a time; the
+// command retry that observes the COMPLETE state returns TPM_RC_SUCCESS.
 //  Return Type: TPM_RC
-//      TPM_RC_CANCELED        if the command is canceled
+//      TPM_RC_TESTING         if background tests remain pending
 LIB_EXPORT
 TPM_RC
 CryptSelfTest(TPMI_YES_NO fullTest  // IN: if full test is required
 );
+
+// CoP asynchronous self-test support.
+LIB_EXPORT int CryptSelfTestDrainOne(void);
+LIB_EXPORT UINT32 CryptSelfTestGetState(void);
+LIB_EXPORT UINT32 CryptSelfTestGetPendingAlgorithm(void);
+LIB_EXPORT BOOL CryptSelfTestIsPending(void);
 
 //*** CryptIncrementalSelfTest()
 // This function is used to perform an incremental self-test. This implementation

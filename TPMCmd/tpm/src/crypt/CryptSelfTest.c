@@ -16,6 +16,36 @@
 
 //** Functions
 
+typedef enum {
+    COP_SELF_TEST_IDLE = 0,
+    COP_SELF_TEST_ACTIVE,
+    COP_SELF_TEST_COMPLETE
+} COP_SELF_TEST_STATE;
+
+static COP_SELF_TEST_STATE s_copFullSelfTestState = COP_SELF_TEST_IDLE;
+
+LIB_EXPORT UINT32 CryptSelfTestGetState(void)
+{
+    return (UINT32)s_copFullSelfTestState;
+}
+
+LIB_EXPORT UINT32 CryptSelfTestGetPendingAlgorithm(void)
+{
+    TPM_ALG_ID alg;
+
+    for(alg = TPM_ALG_FIRST; alg <= TPM_ALG_LAST; alg++)
+    {
+        if(TEST_BIT(alg, g_toTest))
+            return alg;
+    }
+    return TPM_ALG_ERROR;
+}
+
+LIB_EXPORT BOOL CryptSelfTestIsPending(void)
+{
+    return CryptSelfTestGetPendingAlgorithm() != TPM_ALG_ERROR;
+}
+
 //*** RunSelfTest()
 // Local function to run self-test
 static TPM_RC CryptRunSelfTests(
@@ -61,13 +91,96 @@ CryptSelfTest(TPMI_YES_NO fullTest  // IN: if full test is required
         FAIL(FATAL_ERROR_FORCED);
 #endif
 
-    // If the caller requested a full test, then reset the to test vector so that
-    // all the tests will be run
-    if(fullTest == YES)
+    // CoP note: CryptInitializeToTest() already arms g_toTest at TPM startup.
+    // ESAPI resubmits TPM2_SelfTest(fullTest=YES) while it receives
+    // TPM_RC_TESTING. Reinitializing g_toTest on every retry would undo the
+    // background drain's progress forever. COMPLETE is latched until the next
+    // SelfTest command acknowledges it with SUCCESS; only a later independent
+    // full-test request starts a new cycle.
+    if(fullTest == YES && s_copFullSelfTestState == COP_SELF_TEST_COMPLETE)
+    {
+        s_copFullSelfTestState = COP_SELF_TEST_IDLE;
+        return TPM_RC_SUCCESS;
+    }
+    if(fullTest == YES && s_copFullSelfTestState == COP_SELF_TEST_IDLE)
     {
         MemoryCopy(g_toTest, g_implementedAlgorithms, sizeof(g_toTest));
+        CryptTestAlgorithm(TPM_ALG_ERROR, &g_toTest);
+        s_copFullSelfTestState = COP_SELF_TEST_ACTIVE;
     }
-    return CryptRunSelfTests(&g_toTest);
+    // CoP modification (do not block the host on the ~9s software self-test):
+    // On this platform the cryptographic self-tests run in software (wolfSSL)
+    // on a Cortex-M4 and take several seconds in aggregate. A synchronous full
+    // run exceeds the host's TPM2_CC_SELF_TEST command timeout (Linux 6.8
+    // tpm2_ordinal_duration_map = 3000 ms), which causes the tpm_crb probe to
+    // time out during cold boot. Instead, report TPM_RC_TESTING while any
+    // testable algorithm is still pending, and rely on the per-algorithm
+    // "test on first use" mechanism (TPM_DO_SELF_TEST) to test each algorithm
+    // before it is actually used. Per TCG this is valid asynchronous self-test
+    // behaviour, and Linux's tpm2_do_selftest() maps TPM_RC_TESTING -> success.
+    // Accept the request immediately. TPM2_GetTestResult advances one pending
+    // algorithm per command and reports TPM_RC_TESTING until the cycle finishes.
+    // This preserves Linux boot latency while giving management clients a
+    // bounded, command-driven way to complete the requested full test.
+    if(!CryptSelfTestIsPending())
+        s_copFullSelfTestState = COP_SELF_TEST_IDLE;
+    return TPM_RC_SUCCESS;
+}
+
+//*** CryptSelfTestDrainOne()
+// CoP background self-test support (Option B). Tests at most ONE pending
+// algorithm from g_toTest and clears its bit, then reports whether any
+// algorithm still needs testing. This lets the CRB idle loop drain g_toTest
+// incrementally so that a full TPM2_SelfTest(YES) eventually converges to
+// TPM_RC_SUCCESS (honest GetTestResult and proactive failure detection), while
+// the per-command CryptSelfTest() path still returns immediately (Option C).
+// MUST be invoked from a context that has established the platform failure
+// setjmp (see _plat__RunSelfTestDrain) because a failing self-test calls FAIL()
+// which longjmps.
+//  Return value: 2 if this call drained the last pending algorithm, 1 if more
+//      algorithms still need testing, 0 if nothing was pending before this call,
+//      -2 if host activity canceled the background step.
+LIB_EXPORT int CryptSelfTestDrainOne(void)
+{
+    ALGORITHM_VECTOR oneAlgorithm = {0};
+    TPM_ALG_ID alg;
+    TPM_ALG_ID pending = TPM_ALG_ERROR;
+    TPM_RC result;
+
+    // Find the first algorithm still needing test.
+    for(alg = TPM_ALG_FIRST; alg <= TPM_ALG_LAST; alg++)
+    {
+        if(TEST_BIT(alg, g_toTest))
+        {
+            pending = alg;
+            break;
+        }
+    }
+    if(pending == TPM_ALG_ERROR)
+    {
+        if(s_copFullSelfTestState == COP_SELF_TEST_ACTIVE)
+            s_copFullSelfTestState = COP_SELF_TEST_COMPLETE;
+        return 0;  // nothing left to test
+    }
+
+    // Use a temporary vector so AlgorithmTests enables cancellation. Successful
+    // tests clear both this vector and g_toTest. If host activity arrives during
+    // a long RSA/ECC test, leave its g_toTest bit pending and retry later.
+    SET_BIT(pending, oneAlgorithm);
+    result = CryptTestAlgorithm(pending, &oneAlgorithm);
+    if(result == TPM_RC_CANCELED)
+        return -2;
+    if(result != TPM_RC_SUCCESS)
+        return -1;
+
+    // Report whether anything still needs testing.
+    for(alg = TPM_ALG_FIRST; alg <= TPM_ALG_LAST; alg++)
+    {
+        if(TEST_BIT(alg, g_toTest))
+            return 1;
+    }
+    s_copFullSelfTestState = COP_SELF_TEST_COMPLETE;
+    return 2;
 }
 
 //*** CryptIncrementalSelfTest()
@@ -136,6 +249,8 @@ void CryptInitializeToTest(void)
     // Setting the algorithm to null causes the test function to just clear
     // out any algorithms for which there is no test.
     CryptTestAlgorithm(TPM_ALG_ERROR, &g_toTest);
+
+    s_copFullSelfTestState = COP_SELF_TEST_ACTIVE;
 
     return;
 }
